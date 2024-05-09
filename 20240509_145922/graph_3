@@ -1,0 +1,10 @@
+// Variables at each loop turn
+digraph {
+	node [shape=box]
+	compute_3 [label="compute = <function compute at 0x0000021ACE8B7F60>"]
+	compute_2 -> compute_3
+	x_3 [label="x = 16"]
+	x_2 -> x_3
+	i_3 [label="i = 3"]
+	i_2 -> i_3
+}
