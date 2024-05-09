@@ -28,20 +28,20 @@ class CodeInstrumentor(ast.NodeTransformer): #extend ast.NodeTransformer
         return node
 
     def visit_For(self, node):
+        # Instrument For loops to print each iteration
         self.generic_visit(node)  # Process the loop body first to capture internal changes
         loop_var = astor.to_source(node.target).strip()
+        # Create a print statement to capture the state of all variables updated within the loop
         new_body = [ast.parse(f"print('Loop iteration with {loop_var} =', {loop_var})").body[0]]
         for stmt in node.body:
             new_body.append(stmt)
-            if isinstance(stmt, (ast.Assign, ast.AugAssign)):
-                for target in getattr(stmt, 'targets', [stmt.target]):
+            if isinstance(stmt, ast.Assign):
+                for target in stmt.targets:
                     if isinstance(target, ast.Name):
-                        value_src = astor.to_source(stmt.value).strip() if isinstance(stmt, ast.Assign) else f"{target.id} + {astor.to_source(stmt.value).strip()}"
-                        print_stmt = ast.parse(f"print('During loop, {target.id} =', {value_src})").body[0]
+                        print_stmt = ast.parse(f"print('During loop, {target.id} =', {target.id})").body[0]
                         new_body.append(print_stmt)
         node.body = new_body
         return node
-
 
     def visit_While(self, node):
         # Instrument While loops similarly
@@ -85,7 +85,6 @@ instrumented_source = astor.to_source(instrumented_code)
 # print(instrumented_source)  # Optionally print the modified code to see the changes
 exec(instrumented_source)
 # print(ast.dump(parsed_code, indent = 4))
-print(parsed_code)
 f=open(r'output.txt','w')
 f.write(ast.dump(parsed_code, indent = 4))
 f.close()

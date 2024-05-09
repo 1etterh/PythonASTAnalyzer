@@ -106,16 +106,6 @@ Module(
                 AugAssign(
                     target=Name(id='x', ctx=Store()),
                     op=Add(),
-                    value=Name(id='i', ctx=Load())),
-                Expr(
-                    value=Call(
-                        func=Name(id='print', ctx=Load()),
-                        args=[
-                            Constant(value='During loop, x ='),
-                            BinOp(
-                                left=Name(id='x', ctx=Load()),
-                                op=Add(),
-                                right=Name(id='i', ctx=Load()))],
-                        keywords=[]))],
+                    value=Name(id='i', ctx=Load()))],
             orelse=[])],
     type_ignores=[])
