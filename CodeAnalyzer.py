@@ -1,65 +1,81 @@
 import ast
+import astor
 import graphviz
 import os
 import datetime
 
-class CodeAnalyzer(ast.NodeVisitor):
-    def __init__(self, code):
-        self.ast = ast.parse(code)
-        self.folder_name = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+class CodeVisualizer(ast.NodeTransformer):
+    def __init__(self):
+        self.graph_counter = 0
+        base_directory = "graphs"
+        if not os.path.exists(base_directory):
+            os.makedirs(base_directory)
+        self.folder_name = os.path.join(base_directory, datetime.datetime.now().strftime("%Y%m%d_%H%M%S"))
         os.makedirs(self.folder_name, exist_ok=True)
         self.graph_counter = 0
-        # Prepare a single execution environment
-        self.exec_env = {}
-        exec(code, self.exec_env)  # Preload defined functions and classes into the environment
+
+    def visit_FunctionDef(self, node):
+        # No graph creation for function definitions, just traverse
+        self.generic_visit(node)
+        return node
+
+    def visit_Assign(self, node):
+        # Visualize variable assignments
+        self.generic_visit(node)
+        for target in node.targets:
+            if isinstance(target, ast.Name):
+                self.create_graph(target.id, astor.to_source(node.value).strip())
+        return node
+
+    def visit_ClassDef(self, node):
+        # No graph creation for class definitions, just traverse
+        self.generic_visit(node)
+        return node
 
     def visit_For(self, node):
-        # Extract the range and initialize the loop variable
-        iter_range = eval(ast.unparse(node.iter), self.exec_env)
-        loop_var = node.target.id  # the loop variable, e.g., 'i'
-        loop_body = ast.unparse(node.body)
-
-        # Manually execute each iteration of the loop
-        for value in iter_range:
-            self.exec_env[loop_var] = value  # Set loop variable for this iteration
-            exec(loop_body, self.exec_env)  # Execute the loop body using the updated environment
-
-            # After executing, visualize the current state of variables
-            self.visualize()
-
+        # Visualize each iteration in the loop
         self.generic_visit(node)
+        loop_var = astor.to_source(node.target).strip()
+        new_body = []
 
-    def visualize(self):
-        dot = graphviz.Digraph(comment='Variables at each loop turn')
-        dot.attr('node', shape='box')  # Set nodes to be box-shaped
+        for stmt in node.body:
+            new_body.append(stmt)
+            if isinstance(stmt, (ast.Assign, ast.AugAssign)):
+                for target in getattr(stmt, 'targets', [stmt.target]):
+                    if isinstance(target, ast.Name):
+                        value = astor.to_source(stmt.value).strip() if isinstance(stmt, ast.Assign) else f"{target.id} + {astor.to_source(stmt.value).strip()}"
+                        self.create_graph(target.id, value)
+        node.body = new_body
+        return node
 
-        # Create a node for each variable in the environment (excluding built-ins and __name__)
-        for var, value in self.exec_env.items():
-            if var not in ["__builtins__", "__name__"]:
-                current_var = f'{var}_{self.graph_counter}'
-                prev_var = f'{var}_{self.graph_counter - 1}'
-                dot.node(current_var, f'{var} = {value}')
-                if self.graph_counter > 0:
-                    dot.edge(prev_var, current_var)
-
-        filename = os.path.join(self.folder_name, f'graph_{self.graph_counter}')
-        dot.render(filename, format='png')
+    def create_graph(self, variable_id, expression):
+        dot = graphviz.Digraph('G', filename=f'{self.folder_name}/graph_{self.graph_counter}.gv', format='png')
+        dot.node(variable_id, f'{variable_id} = {expression}',shape="box")
+        dot.render(view=False)
         self.graph_counter += 1
 
-    def analyze(self):
-        self.visit(self.ast)
-
-# Example Python code to analyze
+# Example Python code to visualize
 code = """
 def compute(x, y):
     result = x + y
     return result
 
-x=0
+class Example:
+    def method(self):
+        pass
+
+x = 0
 for i in range(5):
     compute(i, i+1)
-    x+=i
+    x += i
 """
 
-analyzer = CodeAnalyzer(code)
-analyzer.analyze()
+# Parse the code to an AST
+parsed_code = ast.parse(code)
+
+# Create a visualizer and modify the AST
+visualizer = CodeVisualizer()
+visualizer.visit(parsed_code)
+
+# Execute the original code for comparison or further use
+exec(astor.to_source(parsed_code))
