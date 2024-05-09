@@ -9,10 +9,8 @@ class CodeAnalyzer(ast.NodeTransformer):
     def __init__(self, code):
         self.ast = ast.parse(code)
         self.graph_counter = 0
-        self.functions = {}
-        self.classes = {}
         self.variables = defaultdict(list)
-        self.dot = None  # Initialized in init_graph()
+        self.dot = None  # Graph will be initialized later
         self.base_dir = "graphs"
 
         if not os.path.exists(self.base_dir):
@@ -21,33 +19,33 @@ class CodeAnalyzer(ast.NodeTransformer):
         os.makedirs(self.folder_name, exist_ok=True)
 
     def init_graph(self):
-        # Initialize a new Graphviz graph
         self.dot = graphviz.Digraph(f'Graph_{self.graph_counter}', format='png')
+        for var, values in self.variables.items():
+            self.dot.node(var, f'{var}={values[-1]}' if values else var)  # Display the latest value
 
-    def create_graph(self):
-        # Save the current graph to a file, ensuring each graph is unique
-        filename = os.path.join(self.folder_name, f'graph_{self.graph_counter}')
-        self.dot.render(filename=filename, view=False)
-        self.graph_counter += 1  # Increment the counter to ensure the next graph has a unique name
-        
-        ##############Debug
-        print("create_graph",self.graph_counter)
+    def update_graph(self, var_name, value):
+        # Update variable's list and reinitialize graph to reflect the change
+        self.variables[var_name].append(value)
+        self.init_graph()
+        self.dot.render(os.path.join(self.folder_name, f'graph_{self.graph_counter}'))
+        self.graph_counter += 1
 
-    def visit_For(self, node):
-        self.generic_visit(node)  # Process the loop body first to capture internal changes
-        loop_var = astor.to_source(node.target).strip()
-        new_body = [ast.parse(f"print('Loop iteration with {loop_var} =', {loop_var})").body[0]]
-        for stmt in node.body:
-            new_body.append(stmt)
-            if isinstance(stmt, (ast.Assign, ast.AugAssign)):
-                for target in getattr(stmt, 'targets', [stmt.target]):
-                    if isinstance(target, ast.Name):
-                        value_src = astor.to_source(stmt.value).strip() if isinstance(stmt, ast.Assign) else f"{target.id} + {astor.to_source(stmt.value).strip()}"
-                        print_stmt = ast.parse(f"print('During loop, {target.id} =', {value_src})").body[0]
-                        new_body.append(print_stmt)
-        node.body = new_body
+    def visit_Assign(self, node):
+        self.generic_visit(node)
+        for target in node.targets:
+            if isinstance(target, ast.Name):
+                value = astor.to_source(node.value).strip()
+                self.update_graph(target.id, value)
         return node
-    
+
+    def visit_AugAssign(self, node):
+        self.generic_visit(node)
+        if isinstance(node.target, ast.Name):
+            operation = self.operator_to_string(node.op)
+            value = f'{node.target.id} {operation} {astor.to_source(node.value).strip()}'
+            self.update_graph(node.target.id, value)
+        return node
+
     def operator_to_string(self, operator):
         operators = {
             ast.Add: '+', ast.Sub: '-', ast.Mult: '*', ast.Div: '/', ast.Mod: '%'
@@ -55,6 +53,7 @@ class CodeAnalyzer(ast.NodeTransformer):
         return operators.get(type(operator), '?')
 
     def analyze(self):
+        self.init_graph()  # Initialize the graph with initial state of variables
         self.visit(self.ast)
         exec(astor.to_source(self.ast))
 

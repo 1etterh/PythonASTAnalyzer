@@ -8,7 +8,7 @@ class CodeVisualizer(ast.NodeTransformer):
         self.graph_counter = 0
         self.folder_name = "graphs"
         os.makedirs(self.folder_name, exist_ok=True)
-
+        
     def visit_FunctionDef(self, node):
         # No graph creation for function definitions, just traverse
         self.generic_visit(node)
@@ -21,7 +21,7 @@ class CodeVisualizer(ast.NodeTransformer):
             if isinstance(target, ast.Name):
                 self.create_graph(target.id, astor.to_source(node.value).strip())
         return node
-
+   
     def visit_ClassDef(self, node):
         # No graph creation for class definitions, just traverse
         self.generic_visit(node)
