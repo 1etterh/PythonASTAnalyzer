@@ -1,7 +1,7 @@
 import ast
 import astor
 from collections import defaultdict
-class PythonASTAnalyzer(ast.NodeVisitor):
+class PythonASTAnalyzer(ast.NodeTransformer):
     def __init__(self, code):
         self.ast = ast.parse(code)
         self.variables = defaultdict(lambda:None)
