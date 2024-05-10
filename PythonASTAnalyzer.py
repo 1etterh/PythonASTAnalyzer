@@ -2,7 +2,6 @@ import ast
 import astor
 import graphviz
 from collections import defaultdict
-from datetime import datetime
 
 class PythonASTAnalyzer(ast.NodeVisitor):
     def __init__(self, code):
