@@ -36,7 +36,7 @@ class ValueTracker(ast.NodeTransformer):
     def visit_For(self, node):
         self.generic_visit(node)  # Process the loop body first to capture internal changes
         loop_var = astor.to_source(node.target).strip()
-        new_body = [ast.parse(f"print('Loop iteration with {loop_var} =', {loop_var})").body[0]]
+        new_body = [ast.parse(f"dot=graphviz(shape=/'box)/'").body[0]]
         for stmt in node.body:
             new_body.append(stmt)
             if isinstance(stmt, (ast.Assign, ast.AugAssign)):
@@ -44,7 +44,10 @@ class ValueTracker(ast.NodeTransformer):
                     if isinstance(target, ast.Name):
                         value_src = astor.to_source(stmt.value).strip() if isinstance(stmt, ast.Assign) else f"{target.id} + {astor.to_source(stmt.value).strip()}"
                         print_stmt = ast.parse(f"print('During loop, {target.id} =', {value_src})").body[0]
+
                         new_body.append(print_stmt)
+                        graph_stmt = ast.parse(f"dot.node(id={target.id}, value={value_src})")
+                        new_body.append(graph_stmt)
         node.body = new_body
         return node
 
