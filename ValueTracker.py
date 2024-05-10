@@ -19,16 +19,21 @@ class ValueTracker(ast.NodeTransformer):
         new_body = folder_check_stmt + init_graph_stmt
 
         for stmt in node.body:
-            self.generic_visit(stmt)  # Make sure any nested structures are processed
+            self.generic_visit(stmt)  # Ensure nested structures are processed
             new_body.append(stmt)
-            if isinstance(stmt, (ast.Assign, ast.AugAssign)):
-                for target in getattr(stmt, 'targets', [stmt.target]):
+            if isinstance(stmt, ast.Assign) or isinstance(stmt, ast.AugAssign):
+                # Properly handle targets for Assign and target for AugAssign
+                targets = stmt.targets if isinstance(stmt, ast.Assign) else [stmt.target]
+                for target in targets:
                     if isinstance(target, ast.Name):
+                        value_src = astor.to_source(stmt.value).strip()
                         update_graph_code = f"""
-dot.node('{target.id}', '{target.id} = ' + str({target.id}), shape='box')
+import pprint
+value_repr = pprint.pformat({target.id}, width=1)
+dot.node('{target.id}', '<{target.id} = ' + value_repr.replace('\\n', '<BR/>') + '>', shape='none')
 """
-                        update_graph_stmt = ast.parse(update_graph_code).body[0]
-                        new_body.append(update_graph_stmt)
+                        update_graph_stmt = ast.parse(update_graph_code).body
+                        new_body.extend(update_graph_stmt)
 
         # Append graph rendering statement at the end of the loop body
         render_stmt = ast.parse(f"dot.render(filename='{self.folder_name}/graph_' + str({node.target.id}), view=False)").body[0]
@@ -50,15 +55,20 @@ x = 0
 for i in range(5):
     compute(i, i+1)
     x += i
+    y = {'a': i+1, 'b': i+2}
+    z = [[i+1, i+2], [i+3, i+4]]
 """
 
-# Create a visualizer and modify the AST
-visualizer = ValueTracker(code)
-visualizer.track_values()
+# Create a tracker and modify the AST
+tracker = ValueTracker(code)
+tracker.track_values()
 
 # Optionally execute the modified code
-exec_globals = {'graphviz': graphviz, 'os': os, 'datetime': datetime}
-exec(compile(astor.to_source(visualizer.ast), filename="<ast>", mode="exec"), exec_globals)
+exec_globals = {'graphviz': graphviz, 'os': os, 'datetime': datetime, 'pprint': __import__('pprint')}
+exec(compile(astor.to_source(tracker.ast), filename="<ast>", mode="exec"), exec_globals)
 
 # Display the modified source code
-print(astor.to_source(visualizer.ast))
+print(astor.to_source(tracker.ast))
+f=open('output.txt','w')
+f.write(astor.to_source(tracker.ast))
+f.close()

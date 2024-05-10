@@ -6,8 +6,8 @@ def compute(x, y):
 x = 0
 for i in range(5):
     import os
-    if not os.path.exists('graphs/20240510_111944'):
-        os.makedirs('graphs/20240510_111944')
+    if not os.path.exists('graphs/20240510_112303'):
+        os.makedirs('graphs/20240510_112303')
     import graphviz
     dot = graphviz.Digraph('G', format='png')
     compute(i, i + 1)
@@ -26,4 +26,4 @@ for i in range(5):
     value_repr = pprint.pformat(z, width=1)
     dot.node('z', '<z = ' + value_repr.replace('\n', '<BR/>') + '>', shape=
         'none')
-    dot.render(filename='graphs/20240510_111944/graph_' + str(i), view=False)
+    dot.render(filename='graphs/20240510_112303/graph_' + str(i), view=False)

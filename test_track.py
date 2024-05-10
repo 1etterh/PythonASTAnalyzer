@@ -59,16 +59,16 @@ for i in range(5):
     z = [[i+1, i+2], [i+3, i+4]]
 """
 
-# Create a visualizer and modify the AST
-visualizer = ValueTracker(code)
-visualizer.track_values()
+# Create a tracker and modify the AST
+tracker = ValueTracker(code)
+tracker.track_values()
 
 # Optionally execute the modified code
 exec_globals = {'graphviz': graphviz, 'os': os, 'datetime': datetime, 'pprint': __import__('pprint')}
-exec(compile(astor.to_source(visualizer.ast), filename="<ast>", mode="exec"), exec_globals)
+exec(compile(astor.to_source(tracker.ast), filename="<ast>", mode="exec"), exec_globals)
 
 # Display the modified source code
-print(astor.to_source(visualizer.ast))
+print(astor.to_source(tracker.ast))
 f=open('output.txt','w')
-f.write(astor.to_source(visualizer.ast))
+f.write(astor.to_source(tracker.ast))
 f.close()
