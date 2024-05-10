@@ -31,7 +31,7 @@ dot.node('{target.id}', '{target.id} = ' + str({target.id}), shape='box')
                         new_body.append(update_graph_stmt)
 
         # Append graph rendering statement at the end of the loop body
-        render_stmt = ast.parse(f"dot.render(filename='{self.folder_name}/graph_' + str({node.target.id}) + '.png', view=False)").body[0]
+        render_stmt = ast.parse(f"dot.render(filename='{self.folder_name}/graph_' + str({node.target.id}), view=False)").body[0]
         new_body.append(render_stmt)
 
         node.body = new_body
