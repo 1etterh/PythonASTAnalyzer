@@ -4,7 +4,7 @@ import graphviz
 from datetime import datetime
 import os
 from collections import deque,defaultdict
-class CodeAnalyzer(ast.NodeTransformer):
+class CodeAnalyzer(ast.NodeVisitor):
     def __init__(self, code):
         self.ast = ast.parse(code)
         self.variables = defaultdict(lambda:None)
@@ -12,14 +12,6 @@ class CodeAnalyzer(ast.NodeTransformer):
         self.classes={}
         self.loop_variables = defaultdict(lambda:None)
         
-
-        #making result graph dir
-        # base_dir = "graphs"
-        # if not os.path.exists(base_dir):
-        #     os.makedirs(base_dir)
-        # self.folder_name = os.path.join(base_dir, datetime.now().strftime("%Y%m%d_%H%M%S"))
-        # os.makedirs(self.folder_name, exist_ok=True)
-
     def visit_Assign(self,node):
         self.generic_visit(node)
         for target in node.targets:
