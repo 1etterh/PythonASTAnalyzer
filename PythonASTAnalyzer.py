@@ -1,7 +1,7 @@
 import ast
 import astor
 from collections import defaultdict
-class CodeAnalyzer(ast.NodeVisitor):
+class PythonASTAnalyzer(ast.NodeVisitor):
     def __init__(self, code):
         self.ast = ast.parse(code)
         self.variables = defaultdict(lambda:None)
@@ -55,7 +55,7 @@ for i in range(5):
     x += i
 '''
 
-analyzer = CodeAnalyzer(code)
+analyzer = PythonASTAnalyzer(code)
 analyzer.analyze()
 print("Variables:", *analyzer.variables)
 print("Loop Variables:",analyzer.loop_variables)
