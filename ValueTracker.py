@@ -1,65 +1,76 @@
 import ast
 import astor
-import os
 import graphviz
-from datetime import datetime
+import os
 
-class ValueTracker(ast.NodeTransformer):
-    def __init__(self, code):
-        self.ast = ast.parse(code)
-        self.folder_name = self.create_graph_folder()
+class CodeVisualizer(ast.NodeTransformer):
+    def __init__(self):
+        self.graph_counter = 0
+        self.folder_name = "graphs"
+        os.makedirs(self.folder_name, exist_ok=True)
         
-    def create_graph_folder(self):
-        base_dir = "graphs"
-        folder_name = os.path.join(base_dir, datetime.now().strftime("%Y%m%d_%H%M%S"))
-        if not os.path.exists(folder_name):
-            os.makedirs(folder_name)
-        return folder_name
-    
-    def visit_For(self, node):
-        self.generic_visit(node)  # Visit the loop body
-        
-        loop_var = node.target.id if isinstance(node.target, ast.Name) else None
-        if loop_var:
-            # Prepare Graphviz visualization
-            init_graph = ast.parse(f"self.init_graph('{loop_var}')").body[0]
-            node.body.insert(0, init_graph)
-        
-        # Inject code to update the graph at the end of each iteration
-        update_graph = ast.parse("self.update_graph()").body[0]
-        node.body.append(update_graph)
-        
+    def visit_FunctionDef(self, node):
+        # No graph creation for function definitions, just traverse
+        self.generic_visit(node)
         return node
 
-    def init_graph(self, loop_var):
-        self.dot = graphviz.Digraph('G', format='png', directory=self.folder_name)
-        self.dot.node(loop_var, label=f"{loop_var} starts at 0")
+    def visit_Assign(self, node):
+        # Visualize variable assignments
+        self.generic_visit(node)
+        for target in node.targets:
+            if isinstance(target, ast.Name):
+                self.create_graph(target.id, astor.to_source(node.value).strip())
+        return node
+   
+    def visit_ClassDef(self, node):
+        # No graph creation for class definitions, just traverse
+        self.generic_visit(node)
+        return node
 
-    def update_graph(self):
-        # This method needs to be adapted to work with dynamic variable values
+    def visit_For(self, node):
+        self.generic_visit(node)  # Process the loop body first to capture internal changes
+        loop_var = astor.to_source(node.target).strip()
+        new_body = [ast.parse(f"print('Loop iteration with {loop_var} =', {loop_var})").body[0]]
+        for stmt in node.body:
+            new_body.append(stmt)
+            if isinstance(stmt, (ast.Assign, ast.AugAssign)):
+                for target in getattr(stmt, 'targets', [stmt.target]):
+                    if isinstance(target, ast.Name):
+                        value_src = astor.to_source(stmt.value).strip() if isinstance(stmt, ast.Assign) else f"{target.id} + {astor.to_source(stmt.value).strip()}"
+                        print_stmt = ast.parse(f"print('During loop, {target.id} =', {value_src})").body[0]
+                        new_body.append(print_stmt)
+        node.body = new_body
+        return node
+
+
+    def create_graph(self, variable_id, expression):
+        dot = graphviz.Digraph('G', filename=f'{self.folder_name}/graph_{self.graph_counter}.gv', format='png')
+        dot.node(variable_id, f'{variable_id} = {expression}')
+        dot.render(view=False)
+        self.graph_counter += 1
+
+# Example Python code to visualize
+code = """
+def compute(x, y):
+    result = x + y
+    return result
+
+class Example:
+    def method(self):
         pass
 
-    def save_graph(self, loop_counter):
-        filename = f"loop_{loop_counter}"
-        self.dot.render(filename=filename, cleanup=True)
-
-    def instrument_and_run(self, code_globals, code_locals):
-        code_globals['self'] = self  # Include 'self' in the globals dict
-        instrumented_ast = self.visit(self.ast)
-        exec(compile(instrumented_ast, filename="<ast>", mode="exec"), code_globals, code_locals)
-    
-    def analyze(self, code_globals, code_locals):
-        self.instrument_and_run(code_globals, code_locals)
-
-# Sample code for analysis
-code = '''
 x = 0
 for i in range(5):
+    compute(i, i+1)
     x += i
-print(x)
-'''
+"""
 
-tracker = ValueTracker(code)
-globals_dict = {}
-locals_dict = {}
-tracker.analyze(globals_dict, locals_dict)
+# Parse the code to an AST
+parsed_code = ast.parse(code)
+
+# Create a visualizer and modify the AST
+visualizer = CodeVisualizer()
+visualizer.visit(parsed_code)
+
+# Execute the original code for comparison or further use
+exec(astor.to_source(parsed_code))
