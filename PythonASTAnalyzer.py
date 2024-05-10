@@ -1,9 +1,6 @@
 import ast
 import astor
-import graphviz
-from datetime import datetime
-import os
-from collections import deque,defaultdict
+from collections import defaultdict
 class CodeAnalyzer(ast.NodeVisitor):
     def __init__(self, code):
         self.ast = ast.parse(code)
