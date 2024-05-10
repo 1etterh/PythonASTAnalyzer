@@ -11,11 +11,11 @@ class PythonASTAnalyzer(ast.NodeTransformer):
         self.classes={}
         
         ### create folder
-        basedir = 'graphs'
-        if not os.path.exists(basedir):
-            os.makedirs(basedir)
-        folder_name = os.path.join(basedir,datetime.now().strftime("%Y%m%d_%H%M%S"))
-        os.makedirs(folder_name)
+        # basedir = 'graphs'
+        # if not os.path.exists(basedir):
+        #     os.makedirs(basedir)
+        # folder_name = os.path.join(basedir,datetime.now().strftime("%Y%m%d_%H%M%S"))
+        # os.makedirs(folder_name)
 
     def visit_Assign(self,node):
         self.generic_visit(node)
@@ -27,7 +27,10 @@ class PythonASTAnalyzer(ast.NodeTransformer):
     def visit_For(self, node):
         self.generic_visit(node)
         loop_var = astor.to_source(node.target).strip()
+        #add to class variable: loop_var
         self.loop_variables[loop_var]
+        
+        return node
         
     def visit_FunctionDef(self, node):
         self.generic_visit(node)

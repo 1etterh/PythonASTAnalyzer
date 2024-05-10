@@ -79,4 +79,6 @@ visualizer = ValueTracker()
 visualizer.visit(parsed_code)
 
 # Execute the original code for comparison or further use
-exec(astor.to_source(parsed_code))
+# exec(astor.to_source(parsed_code))
+# print(ast.dump(parsed_code,indent=4))
+print(astor.to_source(parsed_code))
