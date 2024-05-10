@@ -1,7 +1,11 @@
 # visualize-ast
  visualize ast for code analysis
 # used libraries
- ast, astor, graphviz
+ ast, astor, graphviz, matplotlib
+
+# references
+ birdseye
+ 
 #### _PythonASTAnalyzer(ast.NodeTransformer)_
 1. **custom** **subclass** of *ast.NodeTransformer*
 2. _visit_  : save variable names
