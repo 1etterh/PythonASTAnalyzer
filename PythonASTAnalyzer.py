@@ -6,16 +6,8 @@ class PythonASTAnalyzer(ast.NodeTransformer):
         self.ast = ast.parse(code)
         self.variables = defaultdict(lambda:None)
         self.loop_variables = defaultdict(lambda:None)
-        
         self.functions = {}
         self.classes={}
-        
-        ### create folder
-        # basedir = 'graphs'
-        # if not os.path.exists(basedir):
-        #     os.makedirs(basedir)
-        # folder_name = os.path.join(basedir,datetime.now().strftime("%Y%m%d_%H%M%S"))
-        # os.makedirs(folder_name)
 
     def visit_Assign(self,node):
         self.generic_visit(node)
