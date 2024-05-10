@@ -1,14 +1,22 @@
-import ast
-import astor
+import ast, astor,os
 from collections import defaultdict
+from datetime import datetime
 class PythonASTAnalyzer(ast.NodeTransformer):
     def __init__(self, code):
         self.ast = ast.parse(code)
         self.variables = defaultdict(lambda:None)
-        self.functions = {}
-        self.classes={}
         self.loop_variables = defaultdict(lambda:None)
         
+        self.functions = {}
+        self.classes={}
+        
+        ### create folder
+        basedir = 'graphs'
+        if not os.path.exists(basedir):
+            os.makedirs(basedir)
+        folder_name = os.path.join(basedir,datetime.now().strftime("%Y%m%d_%H%M%S"))
+        os.makedirs(folder_name)
+
     def visit_Assign(self,node):
         self.generic_visit(node)
         for target in node.targets:
@@ -57,7 +65,7 @@ for i in range(5):
 
 analyzer = PythonASTAnalyzer(code)
 analyzer.analyze()
-print("Variables:", *analyzer.variables)
+print("Variables:", analyzer.variables)
 print("Loop Variables:",analyzer.loop_variables)
 print("Functions:",analyzer.functions)
 print("Classes:",analyzer.classes)

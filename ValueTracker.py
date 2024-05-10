@@ -2,12 +2,18 @@ import ast
 import astor
 import graphviz
 import os
-
-class CodeVisualizer(ast.NodeTransformer):
+from datetime import datetime
+class ValueTracker(ast.NodeTransformer):
     def __init__(self):
         self.graph_counter = 0
-        self.folder_name = "graphs"
-        os.makedirs(self.folder_name, exist_ok=True)
+        self.folder_name = self.create_graph_folder()
+        
+    def create_graph_folder(self):
+        base_dir = "graphs"
+        folder_name = os.path.join(base_dir, datetime.now().strftime("%Y%m%d_%H%M%S"))
+        if not os.path.exists(folder_name):
+            os.makedirs(folder_name)
+        return folder_name
         
     def visit_FunctionDef(self, node):
         # No graph creation for function definitions, just traverse
@@ -69,7 +75,7 @@ for i in range(5):
 parsed_code = ast.parse(code)
 
 # Create a visualizer and modify the AST
-visualizer = CodeVisualizer()
+visualizer = ValueTracker()
 visualizer.visit(parsed_code)
 
 # Execute the original code for comparison or further use
