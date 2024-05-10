@@ -1,0 +1,29 @@
+def compute(x, y):
+    result = x + y
+    return result
+
+
+x = 0
+for i in range(5):
+    import os
+    if not os.path.exists('graphs/20240510_140758'):
+        os.makedirs('graphs/20240510_140758')
+    import graphviz
+    dot = graphviz.Digraph('G', format='png')
+    compute(i, i + 1)
+    x += i
+    import pprint
+    value_repr = pprint.pformat(x, width=1)
+    dot.node('x', '<x = ' + value_repr.replace('\n', '<BR/>') + '>', shape=
+        'none')
+    y = {'a': i + 1, 'b': i + 2}
+    import pprint
+    value_repr = pprint.pformat(y, width=1)
+    dot.node('y', '<y = ' + value_repr.replace('\n', '<BR/>') + '>', shape=
+        'none')
+    z = [[i + 1, i + 2], [i + 3, i + 4]]
+    import pprint
+    value_repr = pprint.pformat(z, width=1)
+    dot.node('z', '<z = ' + value_repr.replace('\n', '<BR/>') + '>', shape=
+        'none')
+    dot.render(filename='graphs/20240510_140758/graph_' + str(i), view=False)
