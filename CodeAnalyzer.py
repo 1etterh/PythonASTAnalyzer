@@ -3,12 +3,15 @@ import astor
 import graphviz
 from datetime import datetime
 import os
-from collections import deque
+from collections import deque,defaultdict
 class CodeAnalyzer(ast.NodeTransformer):
     def __init__(self, code):
         self.ast = ast.parse(code)
         self.variables = deque()
+        self.functions = {}
+        self.classes={}
         base_dir = "graphs"
+        self.loopVar = defaultdict(lambda:None)
         if not os.path.exists(base_dir):
             os.makedirs(base_dir)
         self.folder_name = os.path.join(base_dir, datetime.now().strftime("%Y%m%d_%H%M%S"))
@@ -24,14 +27,8 @@ class CodeAnalyzer(ast.NodeTransformer):
     def visit_For(self, node):
         self.generic_visit(node)
         loop_var = astor.to_source(node.target).strip()
-        self.variables.append(loop_var)
-        # for stmt in node.body:
-        #     if isinstance(stmt, (ast.Assign, ast.AugAssign)):
-        #         targets = stmt.targets if isinstance(stmt, (ast.Assign)) else [stmt.target]
-        #         for target in targets:
-        #             if isinstance(target, ast.Name):
-        #                 self.variables.append(target.id)
-        # return node
+        self.loopVar[loop_var]
+        
     def analyze(self):
         self.visit(self.ast)
 
@@ -44,8 +41,10 @@ def compute(x, y):
 x = 0
 for i in range(5):
     compute(i, i + 1)
-    x += i
+    for j in range(i,10):
+        x+=j
 '''
 analyzer = CodeAnalyzer(code)
 analyzer.analyze()
 print(analyzer.variables)
+print(analyzer.loopVar)
